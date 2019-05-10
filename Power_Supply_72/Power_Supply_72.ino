@@ -11,6 +11,7 @@
 #include <Adafruit_INA219.h>
 #include <TFT_HX8357.h> // Hardware-specific library
 #include "TimerOne.h"
+#include <avr/wdt.h>
 
 Adafruit_INA219 ina219;
 
@@ -82,6 +83,28 @@ TFT_HX8357 tft = TFT_HX8357();       // Invoke custom library
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
+void watchdogSetup(void)
+{
+  cli();  // disable all interrupts
+  wdt_reset(); // reset the WDT timer
+  /*
+    WDTCSR configuration:
+    WDIE = 1: Interrupt Enable
+    WDE = 1 :Reset Enable
+    WDP3 = 0 :For 2000ms Time-out
+    WDP2 = 1 :For 2000ms Time-out
+    WDP1 = 1 :For 2000ms Time-out
+    WDP0 = 1 :For 2000ms Time-out
+  */
+  // Enter Watchdog Configuration mode:
+  WDTCSR |= (1 << WDCE) | (1 << WDE);
+  // Set Watchdog settings:
+  WDTCSR = (1 << WDIE) | (1 << WDE) | (0 << WDP3) | (1 << WDP2) | (1 << WDP1) | (0 << WDP0);
+  sei();
+}
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 void Time_Tick(void) // per 10mS
 {
   //----------------------
@@ -130,6 +153,7 @@ void Time_Tick(void) // per 10mS
 ////////////////////////////////////////////////////////////////////////////////
 void setup()
 {
+  watchdogSetup();
   pinMode(pin_relay, OUTPUT);
   digitalWrite(pin_relay, HIGH);
   pinMode(10, OUTPUT);// test
@@ -177,7 +201,6 @@ void Display_Draw_Digits(void)
   {
     tft.drawFloat(loadvoltage, 2, 5, 130, 7);
   }
-  tft.fillRect(111, 130, 20, 50, TFT_BLACK);// temizleme
   tft.drawString("V ", 115, 158, 4);
   tft.drawString(" Time: ", 5, 180, 2);
   buff[0] = (hour % 60 / 10) + '0';
@@ -369,6 +392,7 @@ void doEncoder()
 ////////////////////////////////////////////////////////////////////////////////////
 void loop(void)
 {
+  wdt_reset();
   if (Button_Refresh && !Button_Debounce )
   {
     Button_Refresh = false;
@@ -419,7 +443,7 @@ void loop(void)
       temp_limit_value = limit_value;
       display_mah_mode = false;
     }
-    if(relay_output == 1)
+    if (relay_output == 1)
     {
       shuntvoltage = ina219.getShuntVoltage_mV();
       busvoltage = ina219.getBusVoltage_V();
@@ -481,6 +505,25 @@ void loop(void)
     }
     loadvoltage -= (current_mA * 0.00047);
     if ((relay_output == 0) && (loadvoltage < 1.0)) // analog kısım kapalı iken 1 v un altındaki voltajlar gösterilmez.
+    {
+      loadvoltage = 0;
+    }
+    if (loadvoltage < 16)
+    {
+      if (loadvoltage >= 12)
+      {
+        current_mA -= 0.2;
+      }
+      else if (loadvoltage >= 7)
+      {
+        current_mA -= 0.1;
+      }
+    }
+    if (current_mA < 0)
+    {
+      current_mA = 0;
+    }
+    if (loadvoltage < 0)
     {
       loadvoltage = 0;
     }
