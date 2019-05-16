@@ -443,7 +443,7 @@ void loop(void)
       temp_limit_value = limit_value;
       display_mah_mode = false;
     }
-    if (relay_output == 1)
+  //  if (relay_output == 1)
     {
       shuntvoltage = ina219.getShuntVoltage_mV();
       busvoltage = ina219.getBusVoltage_V();
@@ -452,7 +452,7 @@ void loop(void)
       current_mA = ina219.getCurrent_mA();
       loadvoltage = busvoltage + (shuntvoltage / 1000);
     }
-    else
+   /* else
     {
       shuntvoltage = 0;
       busvoltage = 0;
@@ -460,7 +460,7 @@ void loop(void)
       loadvoltage2 = 0;
       current_mA = 0;
       loadvoltage = 0;
-    }
+    }*/
 
     if (current_mA < 0)
     {
@@ -503,7 +503,7 @@ void loop(void)
     {
       current_mA = 0;
     }
-    loadvoltage -= (current_mA * 0.00047);
+   // loadvoltage -= (current_mA * 0.00047);
     if ((relay_output == 0) && (loadvoltage < 1.0)) // analog kısım kapalı iken 1 v un altındaki voltajlar gösterilmez.
     {
       loadvoltage = 0;
