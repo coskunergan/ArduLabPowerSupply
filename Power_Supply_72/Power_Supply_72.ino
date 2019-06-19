@@ -22,7 +22,7 @@ Adafruit_INA219 ina219;
 
 #define CURRENT_POZITION   209
 #define VOLTAGE_POZITION    11
-#define BUTTON_LONG_PRESS_TIME  200  // 2 sn
+#define BUTTON_LONG_PRESS_TIME  100  // 1 sn
 #define BUTTON_DEBOUNCE_TIME 5  // 50 ms
 #define TFT_GREY 0x7BEF
 
@@ -30,8 +30,8 @@ Adafruit_INA219 ina219;
 #define encoder0PinB 3
 #define encoder0Btn 4
 
-#define CURRENCT_OFFSET_CORRECT_0_16(x) ((0.03 * x) + 0.066)
-#define CURRENCT_OFFSET_CORRECT_16_32(x) ((0.028 * x) + 0.745)
+#define CURRENCT_OFFSET_CORRECT_0_16(x) ((0.0254 * x) - 0.1060)
+#define CURRENCT_OFFSET_CORRECT_16_32(x) ((0.029 * x) + 0.0773)
 
 #define LIMIT_CORRECT(x) ((-0.038 *x*x*x*x) + (1.768 * x*x*x) - (17.15 * x*x) + (68.68 * x) - 54.28) // 4 . derece polinom
 //#define LIMIT_CORRECT(x) ( (9.506*x*x) - (75.66 * x) + 145.9 )// 2. derece polinom
@@ -50,6 +50,7 @@ bool Charge_Finish = false;
 bool Button_Pressed = false;
 bool Button_Released = false;
 bool Button_Long_Pressed = false;
+bool Mode_Lock_Flag = false;
 
 byte i = 0;
 byte DB_Character = 0;
@@ -519,14 +520,19 @@ void loop(void)
   if (Button_Released)
   {
     Button_Released = false;
-    Display_Charge_Mode = !Display_Charge_Mode;
-    Charge_Finish=false;
+    if(!Mode_Lock_Flag)
+    {
+      Display_Charge_Mode = !Display_Charge_Mode;
+      Charge_Finish=false;
+    }
+    Mode_Lock_Flag = false;
   }
   if (Button_Pressed)
   {
     Button_Pressed = false;
     if (Tft_Power_State == 0)
     {
+      Mode_Lock_Flag = true;
       digitalWrite(Lcd_Power_Pin, HIGH);
       for (int i = 21; i <= 41; i++)
       {
@@ -543,6 +549,7 @@ void loop(void)
     Button_Long_Pressed = false;
     if (Tft_Power_State == 1)
     {
+      Mode_Lock_Flag = true;
       Tft_Power_State = 0;
       tft.fillScreen(TFT_BLACK);
       for (int i = 21; i <= 41; i++)
