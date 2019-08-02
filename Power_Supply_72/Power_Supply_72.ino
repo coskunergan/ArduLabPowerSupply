@@ -18,7 +18,7 @@
 Adafruit_MCP4725 dac;
 Adafruit_INA219 ina219;
 
-#define VERSION_STRING  " Coskun ERGAN  V:2.0.0"
+#define VERSION_STRING  " Coskun ERGAN  V:2.0"
 #define MAX_Temperature  60.0  // TEST!
 #define Temperature_FILTER_SN  5
 #define TEMPERATURE_CAL   0.48
@@ -32,8 +32,8 @@ Adafruit_INA219 ina219;
 #define encoder0PinB 3
 #define encoder0Btn 4
 
-#define CURRENCT_OFFSET_CORRECT_0_16(x) ((0.0254 * x) - 0.1060)
-#define CURRENCT_OFFSET_CORRECT_16_32(x) ((0.029 * x) + 0.0773)
+#define CURRENCT_OFFSET_CORRECT_0_16(x) ((0.030 * x) - 0.036)
+#define CURRENCT_OFFSET_CORRECT_16_32(x) ((0.031 * x) + 0.968)
 
 #define LIMIT_CORRECT(x) ((-0.038 *x*x*x*x) + (1.768 * x*x*x) - (17.15 * x*x) + (68.68 * x) - 54.28) // 4 . derece polinom
 //#define LIMIT_CORRECT(x) ( (9.506*x*x) - (75.66 * x) + 145.9 )// 2. derece polinom
@@ -42,7 +42,8 @@ Adafruit_INA219 ina219;
 #define BG_LOOPS_PER_TASK ( 1121400 / 2 )
 #define AVERAGE_CNT 5
 
-volatile bool Tft_Power_State = true;
+#define STORAGE_VOLTAGE_SIZE 4
+
 volatile bool Measure_Refresh = false;
 volatile bool Display_Refresh = false;
 volatile bool Second_Procces = false;
@@ -58,10 +59,13 @@ volatile bool Mode_Lock_Flag = false;
 volatile bool Rotary_Up_Flag = true;
 bool Volt_Graph_Update_State = true;
 bool Current_Graph_Update_State = true;
+bool saved = false;
 
+volatile byte Rotary_Fast_Mode = false;
+volatile byte Rotary_VeryFast_Mode = false;
 byte i = 0;
 byte DB_Character = 0;
-byte Button_Debounce = 0;
+byte Button_Debounce = 100;
 byte Time_Second = 0;
 byte Time_Minute = 0;
 byte Time_Hour = 0;
@@ -72,10 +76,16 @@ byte Second_Counter = 0;
 byte CPU_util_pct = 0; /* 0 = 0% , 255 = 100% */
 byte CPU_Load_Avr = 255;/* 0 = 0% , 255 = 100% */
 byte CPU_util_array[AVERAGE_CNT];
+byte  Storage_Voltage_Index;
+byte StepDown_Step;
 
 int Button_Counter = 0;
 int Switch_Pin1 = 12;
 int Switch_Pin2 = 11;
+int StepDown_SetVoltage_Pin1 = 10;
+int StepDown_SetVoltage_Pin2 = 9;
+int StepDown_SetVoltage_Pin3 = 8;
+int StepDown_SetVoltage_Pin4 = 7;
 int Lcd_Power_Pin = 42;
 int Charge_Voltage_Limit = 0;
 int Current_Limit_Value = 0;
@@ -86,8 +96,10 @@ int Temperature = 0 ;
 volatile int Rotary_Voltage = 0;
 volatile int Rotary_Limit = 0;
 volatile int Dac_Voltage = 0;
+int Storage_Voltage[STORAGE_VOLTAGE_SIZE];
 
-unsigned long bg_loop_cnt = 0;
+unsigned long Average_Current_Count = 0;
+unsigned long Bg_Loop_Cnt = 0;
 
 float Measure_Shunt_Voltage = 0;
 float Measure_Bus_Voltage = 0;
@@ -96,7 +108,9 @@ float Before_Current_mA = 0;
 float Calculate_Current_mAh = 0;
 float Measure_Load_Voltage = 0;
 float Before_Load_Voltage = 0;
+float Average_Current = 0;
 
+double Average_Current_Total = 0;
 double Current_Draw_Buffer[90];
 double Voltage_Draw_Buffer[90];
 double Current_Max_Value = 0;
@@ -122,105 +136,59 @@ void loop(void)
   //    test++; // cpu load calibration
   //  }
 
-
-  bg_loop_cnt++;
+  Bg_Loop_Cnt++;
 
   wdt_reset();
 
   if (Button_Released)
   {
     Button_Released = false;
-    //    if (!Mode_Lock_Flag)
-    //    {
-    //      Display_Charge_Mode = !Display_Charge_Mode;
-    //      Charge_Finish = false;
-    //    }
-    //    Mode_Lock_Flag = false;
+    //------------------------
+    if (saved == false)
+    {
+      Storage_Voltage_Index++;
+      if (Storage_Voltage_Index >= STORAGE_VOLTAGE_SIZE)
+      {
+        Storage_Voltage_Index = 0;
+      }
+      Rotary_Voltage = Storage_Voltage[Storage_Voltage_Index];
+      Change_Voltage(Rotary_Voltage);
+    }
+    else
+    {
+      saved = false;
+      tft.setTextDatum(TL_DATUM);
+      tft.setTextColor(TFT_CYAN, TFT_BLACK);
+      tft.drawString("         ", 72, 110, 2);
+    }
+    //------------------------
   }
   if (Button_Pressed)
   {
     Button_Pressed = false;
+    //------------------------
 
-    //    if (Display_Charge_Mode == false)
-    //    {
-    //      if (Rotary_Up_Flag == true)
-    //      {
-    //        if (Rotary_Voltage < 16384)
-    //        {
-    //          Rotary_Voltage += 340;
-    //        }
-    //      }
-    //      else
-    //      {
-    //        if (Rotary_Voltage >= 340)
-    //        {
-    //          Rotary_Voltage -= 340;
-    //        }
-    //      }
-    //      Change_Voltage(Rotary_Voltage);
-    //    }
-    //    else
-    //    {
-    //      if (Rotary_Up_Flag == true)
-    //      {
-    //        if (Rotary_Limit < 12000)
-    //        {
-    //          Rotary_Limit += 340;
-    //        }
-    //      }
-    //      else
-    //      {
-    //        if (Rotary_Limit >= 340)
-    //        {
-    //          Rotary_Limit -= 340;
-    //        }
-    //      }
-    //      Change_Limit(Rotary_Limit);
-    //    }
-    //    if (Tft_Power_State == 0)
-    //    {
-    //      Mode_Lock_Flag = true;
-    //      digitalWrite(Lcd_Power_Pin, HIGH);
-    //      for (int i = 21; i <= 41; i++)
-    //      {
-    //        pinMode(i, OUTPUT);
-    //      }
-    //      tft.begin();
-    //      tft.setRotation(1);
-    //      tft.fillScreen(TFT_BLACK);
-    //      Tft_Power_State = 1;
-    //    }
+    //------------------------
   }
   if (Button_Long_Pressed)
   {
     Button_Long_Pressed = false;
-    //    if (Tft_Power_State == 1)
-    //    {
-    //      Mode_Lock_Flag = true;
-    //      Tft_Power_State = 0;
-    //      tft.fillScreen(TFT_BLACK);
-    //      for (int i = 21; i <= 41; i++)
-    //      {
-    //        digitalWrite(i, LOW);
-    //        pinMode(i, INPUT);
-    //      }
-    //      digitalWrite(Lcd_Power_Pin, LOW);
-    //    }
+    //------------------------
+    Storage_Voltage[Storage_Voltage_Index] = Rotary_Voltage;
+    saved = true;
+    //------------------------
   }
   //--------------------------------------------------------------
   if (Measure_Refresh)
   {
-    digitalWrite(10, HIGH);// test
     Measure_Refresh = false;
-    digitalWrite(10, LOW);// test
     //--------------------------------------
     dac.setVoltage(Dac_Voltage, false);
     //--------------------------------------
     Current_Limit_Value = analogRead(A0) * 2.93255;// 1023/3;
 
-    // Current_Limit_Value = analogRead(A0) ;
-
-    // Current_Limit_Value = LIMIT_CORRECT( (double)analogRead(A0) / 46.5);
+    //     Current_Limit_Value = analogRead(A0) ;
+    //     Current_Limit_Value = LIMIT_CORRECT( (double)analogRead(A0) / 46.5);
 
     if (Current_Limit_Value < 0)
     {
@@ -239,6 +207,7 @@ void loop(void)
     Measure_Load_Voltage = Measure_Bus_Voltage + (Measure_Shunt_Voltage / 1000);
     //    Measure_Load_Voltage = 3.0; // TEST!
     //    Measure_Current_mA = 100; // TEST!
+
 
     //-------------------------------------
     if (Measure_Current_mA < 400)
@@ -279,47 +248,39 @@ void loop(void)
       Measure_Load_Voltage = 0;
     }
 
-    if ((Analog_Power_State == 0) && (Measure_Load_Voltage < 1.0)) // analog kısım kapalı iken 1 v un altındaki voltajlar gösterilmez.
-    {
-      Measure_Load_Voltage = 0;
-    }
     if (Set_Current_Mode == 1 )
     {
-      //  Measure_Current_mA -= CURRENCT_OFFSET_CORRECT_0_16(Measure_Load_Voltage);
+      Measure_Current_mA -= CURRENCT_OFFSET_CORRECT_0_16(Measure_Load_Voltage);
     }
     else
     {
-      //  Measure_Current_mA -= CURRENCT_OFFSET_CORRECT_16_32(Measure_Load_Voltage);
+      Measure_Current_mA -= CURRENCT_OFFSET_CORRECT_16_32(Measure_Load_Voltage);
     }
 
     if (Measure_Current_mA < 0.1)
     {
       Measure_Current_mA = 0;
     }
-
+    Average_Current_Total += Measure_Current_mA;
+    Average_Current_Count++;
     Display_Refresh = true;
   }
   //--------------------------------------------------------------
   if (Display_Refresh)
   {
     Display_Refresh = false;
-    if (Tft_Power_State)
-    {
-      Display_Draw_Digits();
-    }
+
+    Display_Draw_Digits();
 
     if (Display_Update)
     {
       //////////////////////////////////////////////////////////////////////////////
       //############################################################################
       //////////////////////////////////////////////////////////////////////////////
-      if (Tft_Power_State)
+      Measure_Value_Temp = (Voltage_Max_Value - Voltage_Min_Value) / 5;
+      for (i = 0; i < 90; i += 1)
       {
-        Measure_Value_Temp = (Voltage_Max_Value - Voltage_Min_Value) / 5;
-        for (i = 0; i < 90; i += 1)
-        {
-          Trace(tft, i, Voltage_Draw_Buffer[i], 2, 80, 80, 440, 90, 0, 90, 5, Voltage_Min_Value, Voltage_Max_Value, Measure_Value_Temp, Volt_Graph_Update_State, TFT_BLACK , VOLTAGE_POZITION);
-        }
+        Trace(tft, i, Voltage_Draw_Buffer[i], 2, 80, 80, 440, 90, 0, 90, 5, Voltage_Min_Value, Voltage_Max_Value, Measure_Value_Temp, Volt_Graph_Update_State, TFT_BLACK , VOLTAGE_POZITION);
       }
       //////////////////////////////////////////////////////////////////////////////
       //############################################################################
@@ -358,12 +319,9 @@ void loop(void)
       //############################################################################
       //////////////////////////////////////////////////////////////////////////////
       Volt_Graph_Update_State = true;
-      if (Tft_Power_State)
+      for (i = 0; i < 90; i += 1)
       {
-        for (i = 0; i < 90; i += 1)
-        {
-          Trace(tft, i, Voltage_Draw_Buffer[i], 2, 80, 80, 440, 90, 0, 90, 5, Voltage_Min_Value, Voltage_Max_Value, Measure_Value_Temp, Volt_Graph_Update_State, TFT_CYAN , VOLTAGE_POZITION);
-        }
+        Trace(tft, i, Voltage_Draw_Buffer[i], 2, 80, 80, 440, 90, 0, 90, 5, Voltage_Min_Value, Voltage_Max_Value, Measure_Value_Temp, Volt_Graph_Update_State, TFT_CYAN , VOLTAGE_POZITION);
       }
       //////////////////////////////////////////////////////////////////////////////
       //############################################################################
@@ -382,13 +340,10 @@ void loop(void)
       //////////////////////////////////////////////////////////////////////////////
       //############################################################################
       //////////////////////////////////////////////////////////////////////////////
-      if (Tft_Power_State)
+      Measure_Value_Temp = (Current_Max_Value - Current_Min_Value) / 5;
+      for (i = 0; i < 90; i += 1)
       {
-        Measure_Value_Temp = (Current_Max_Value - Current_Min_Value) / 5;
-        for (i = 0; i < 90; i += 1)
-        {
-          Trace(tft, i, Current_Draw_Buffer[i], DB_Character, 80, 80, 440, 90, 0, 90, 5, Current_Min_Value, Current_Max_Value, Measure_Value_Temp, Current_Graph_Update_State, TFT_BLACK , CURRENT_POZITION);
-        }
+        Trace(tft, i, Current_Draw_Buffer[i], DB_Character, 80, 80, 440, 90, 0, 90, 5, Current_Min_Value, Current_Max_Value, Measure_Value_Temp, Current_Graph_Update_State, TFT_BLACK , CURRENT_POZITION);
       }
       //////////////////////////////////////////////////////////////////////////////
       //############################################################################
@@ -426,17 +381,15 @@ void loop(void)
       //############################################################################
       //////////////////////////////////////////////////////////////////////////////
       Current_Graph_Update_State = true;
-      if (Tft_Power_State)
+      for (i = 0; i < 90; i += 1)
       {
-        for (i = 0; i < 90; i += 1)
-        {
-          Trace(tft, i, Current_Draw_Buffer[i], DB_Character, 80, 80, 440, 90, 0, 90, 5, Current_Min_Value, Current_Max_Value, Measure_Value_Temp, Current_Graph_Update_State, TFT_YELLOW , CURRENT_POZITION);
-        }
+        Trace(tft, i, Current_Draw_Buffer[i], DB_Character, 80, 80, 440, 90, 0, 90, 5, Current_Min_Value, Current_Max_Value, Measure_Value_Temp, Current_Graph_Update_State, TFT_YELLOW , CURRENT_POZITION);
       }
       //////////////////////////////////////////////////////////////////////////////
       //############################################################################
       //////////////////////////////////////////////////////////////////////////////
     }
+    Set_StepDown(Voltage_Max_Value);
     Display_Update = !Display_Update;
   }
   //--------------------------------------------------------------------------
@@ -465,7 +418,10 @@ void loop(void)
 
     Prev_Current_Mode = 0; // refresh init ina219 periodicly
 
-    if (1)
+    //--------------------------
+    Average_Current = Average_Current_Total / Average_Current_Count;
+    //--------------------------
+    if (0)
     {
       Serial.print("T: "); Serial.print(Time_Hour); Serial.print(':'); Serial.print(Time_Minute); Serial.print(':'); Serial.print(Time_Second); Serial.println(" Sn");
       Serial.print("V: "); Serial.print(Measure_Load_Voltage); Serial.println(" ");
@@ -477,10 +433,9 @@ void loop(void)
   if (Minute_Procces)
   {
     Minute_Procces = false;
-    if (Tft_Power_State)
-    {
-      tft.fillScreen(TFT_BLACK);
-    }
+
+    tft.fillScreen(TFT_BLACK);
+
   }
   //--------------------------------------------------------------------------
 }

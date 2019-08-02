@@ -1,10 +1,20 @@
 //////////////////////////////////////////////////////////////////////////////
 void setup()
 {
- // watchdogSetup();
+  // watchdogSetup();
 
   pinMode(Switch_Pin1, INPUT_PULLUP);
   pinMode(Switch_Pin2, INPUT_PULLUP);
+
+  pinMode(StepDown_SetVoltage_Pin1, OUTPUT);
+  pinMode(StepDown_SetVoltage_Pin2, OUTPUT);
+  pinMode(StepDown_SetVoltage_Pin3, OUTPUT);
+  pinMode(StepDown_SetVoltage_Pin4, OUTPUT);
+
+  digitalWrite(StepDown_SetVoltage_Pin1, LOW);    // 8K
+  digitalWrite(StepDown_SetVoltage_Pin2, LOW);    // 4K
+  digitalWrite(StepDown_SetVoltage_Pin3, LOW);    // 2K
+  digitalWrite(StepDown_SetVoltage_Pin4, LOW);    // 1K
 
   Timer1.initialize(10000);         // per 10mS
   Timer1.attachInterrupt(ISR_Time_Tick);  // attaches Time_Tick() as a timer overflow interrupt
@@ -25,7 +35,7 @@ void setup()
   //---------------------
   //dac.setVoltage(492, true);// default eeprom 3.60V
   //---------------------
-  
+
   pinMode(Lcd_Power_Pin, OUTPUT);
   digitalWrite(Lcd_Power_Pin, HIGH);
 
@@ -57,7 +67,6 @@ void setup()
     }
   }
   wdt_reset();
- 
 }
 ////////////////////////////////////////////////////////////////////////////////
 void watchdogSetup(void)

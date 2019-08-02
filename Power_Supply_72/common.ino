@@ -6,8 +6,8 @@ void CPU_Load_Calc( void )
   static byte index = 0;
   byte idle_pct, i;
 
-  delta_cnt = bg_loop_cnt - prev_bg_loop_cnt;
-  prev_bg_loop_cnt = bg_loop_cnt;
+  delta_cnt = Bg_Loop_Cnt - prev_bg_loop_cnt;
+  prev_bg_loop_cnt = Bg_Loop_Cnt;
   if ( delta_cnt > BG_LOOPS_PER_TASK )
   {
     delta_cnt = BG_LOOPS_PER_TASK;
@@ -69,10 +69,11 @@ void Button_Procces(void)
   {
     Dac_Voltage = 0;
     Analog_Power_State = 0;
+    Average_Current = Average_Current_Total = Average_Current_Count = 0;
   }
   else if (digitalRead(Switch_Pin1) && digitalRead(Switch_Pin2))
   {
-    if(Analog_Power_State == 0 && (Temperature < (MAX_Temperature - 10)))
+    if (Analog_Power_State == 0 && (Temperature < (MAX_Temperature - 10)))
     {
       Change_Voltage(Rotary_Voltage);
       Analog_Power_State = 1;
@@ -80,13 +81,20 @@ void Button_Procces(void)
   }
   if (!digitalRead(Switch_Pin1))
   {
+    if (Display_Charge_Mode == false)
+    {
+      Average_Current = Average_Current_Total = Average_Current_Count = 0;
+    }
     Display_Charge_Mode = true;
   }
   else
   {
+    if (Display_Charge_Mode == true)
+    {
+      Average_Current = Average_Current_Total = Average_Current_Count = 0;
+    }
     Display_Charge_Mode = false;
-    Charge_Finish=false;
+    Charge_Finish = false;
   }
-
 }
 ////////////////////////////////////////////////////////////////////////////////

@@ -9,15 +9,21 @@ void Display_Draw_Digits(void)
   tft.setTextDatum(TL_DATUM);
   tft.setTextColor(TFT_CYAN, TFT_BLACK);
   tft.drawString(" Voltage:", 5, 110, 2);
+  tft.drawNumber(Storage_Voltage_Index + 1, 62, 110, 2);
+  if (saved == true)
+  {
+    tft.drawString("(Saved)", 72, 110, 2);
+  }
+  tft.drawFloat(Measure_Load_Voltage, 2, 5, 130, 7);
   if (Measure_Load_Voltage >= 10)
   {
-    tft.drawFloat(Measure_Load_Voltage, 1, 5, 130, 7);
+    tft.drawString("V ", 145, 163, 2);
   }
   else
   {
-    tft.drawFloat(Measure_Load_Voltage, 2, 5, 130, 7);
+    tft.drawString("       ", 115, 131, 4);
+    tft.drawString("V      ", 115, 157, 4);
   }
-  tft.drawString("V ", 115, 158, 4);
   tft.drawString(" Time: ", 5, 180, 2);
   buff[0] = (Time_Hour % 60 / 10) + '0';
   buff[1] = (Time_Hour % 10) + '0';
@@ -34,7 +40,38 @@ void Display_Draw_Digits(void)
   tft.drawString(buff, 45, 180, 2);
   //--------------------------------------
   tft.setTextColor(TFT_YELLOW, TFT_BLACK);
-  tft.drawString(" Current:", 160, 110, 2);
+  tft.drawString("Average:", 155, 110, 2);
+  if (Average_Current >= 1000)
+  {
+    tft.drawFloat(Average_Current / 1000, 2, 220, 110, 2);
+    tft.drawString(" A      ", 220 + 30 , 110, 2);
+  }
+  else if (Average_Current >= 100)
+  {
+    tft.drawNumber(Average_Current, 220, 110, 2);
+    tft.drawString("  mA ", 214 + 30 , 110, 2);
+  }
+  else if (Average_Current >= 10)
+  {
+    tft.drawFloat(Average_Current, 1, 220, 110, 2);
+    tft.drawString(" mA ", 220 + 30 , 110, 2);
+  }
+  else if (Average_Current >= 1)
+  {
+    tft.drawFloat(Average_Current, 2, 220, 110, 2);
+    tft.drawString(" mA ", 220 + 30 , 110, 2);
+  }  
+  else if (Average_Current >= 0.1)
+  {
+    tft.drawNumber(Average_Current * 1000, 220, 110, 2);
+    tft.drawString("  uA ", 213 + 30 , 110, 2);
+  }
+  else
+  {
+    tft.drawFloat(Average_Current * 1000,2, 220, 110, 2);
+    tft.drawString(" uA ", 219 + 30 , 110, 2);
+  }  
+  //----------------------
   if (Measure_Current_mA >= 1000)
   {
     tft.drawFloat(Measure_Current_mA / 1000, 2, 160, 130, 7);
@@ -194,21 +231,24 @@ void Display_Draw_Digits(void)
   {
     tft.setTextColor(TFT_BLACK, TFT_RED);
   }
-  else if (Temperature >= MAX_Temperature -10)
+  else if (Temperature >= MAX_Temperature - 10)
   {
     tft.setTextColor(TFT_BLACK, TFT_ORANGE);
-  }  
+  }
   else
   {
     tft.setTextColor(TFT_BLACK, TFT_GREEN);
   }
   tft.drawString(" T:   `C", 83, 309, 1);
   tft.drawNumber(Temperature, 105, 309, 1);
+ 
   tft.setTextColor(TFT_MAROON, TFT_GREY);
-  tft.drawString(VERSION_STRING, 300, 309, 1);
-  tft.drawNumber((CPU_Load_Avr * 100) / 255, 460, 309, 1);
-//  tft.drawNumber(  test, 433, 309, 1);
-  
+  tft.drawString("Step:", 220, 309, 1);
+  tft.drawNumber(StepDown_Step, 250, 309, 1);  
+  tft.drawString(VERSION_STRING, 358, 309, 1);
+  // tft.drawNumber((CPU_Load_Avr * 100) / 255, 460, 309, 1);
+  //  tft.drawNumber(  test, 433, 309, 1);
+
   //-------------------------------------
   //Serial.println("Encoder: ");
   //Serial.print(valRotary);
