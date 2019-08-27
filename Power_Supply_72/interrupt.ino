@@ -7,7 +7,7 @@ void ISR_Time_Tick(void) // per 10mS
   Rotary_VeryFast_Mode = 0;
   //----------------------
   // Per 100mS region
-  if ((Second_Counter % 10) == 0)
+  if ((Second_Counter % 6) == 0)
   {
     Measure_Refresh = true;
     Rotary_Fast_Mode = 0;

@@ -123,18 +123,18 @@ void Trace(TFT_HX8357 &tft, double x,  double y,  byte dp,
       temp =  (i - ylo) * (gy - h - gy) / (yhi - ylo) + gy;
 
       //if (i == 0) {
-        // tft.setTextColor(acolor, bcolor);
-        // tft.drawString(xlabel, (int)(gx + w) , (int)temp, 2);     // label satırı yoooook
-        //tft.drawLine(gx+SHIFT_X, temp+shift_y, gx+SHIFT_X + w, temp+shift_y, acolor);
-     // }
-       tft.drawLine(gx + SHIFT_X, temp + shift_y, gx + w + SHIFT_X, temp + shift_y, gcolor);
+      // tft.setTextColor(acolor, bcolor);
+      // tft.drawString(xlabel, (int)(gx + w) , (int)temp, 2);     // label satırı yoooook
+      //tft.drawLine(gx+SHIFT_X, temp+shift_y, gx+SHIFT_X + w, temp+shift_y, acolor);
+      // }
+      tft.drawLine(gx + SHIFT_X, temp + shift_y, gx + w + SHIFT_X, temp + shift_y, gcolor);
       // draw the axis labels
       tft.setTextColor(tcolor, bcolor);
       // precision is default Arduino--this could really use some format control
       // tft.drawNumber(i, gx-4+SHIFT_X, temp+shift_y, 1);
       tft.drawFloat(i, dp, gx - 4 + SHIFT_X, temp + shift_y, 1);
     }
-      //tft.setTextDatum(TC_DATUM);
+    //tft.setTextDatum(TC_DATUM);
     // draw x scale
     for (i = xlo; i <= xhi; i += xinc) {
 
@@ -183,5 +183,58 @@ void Trace(TFT_HX8357 &tft, double x,  double y,  byte dp,
 
 }
 
+void Trace2(double x, double y,  byte dp,
+            double ylo, double yhi, double yinc,
+            boolean &update1, unsigned int color, unsigned int shift_y, double &ox, double &oy)
+{
+  double i;
+  int temp;
+  
+  if (update1)
+  {
+    update1 = false;
+
+    ox = x * 440 / 90 + 80;
+    oy = (y - ylo) * (-90) / (yhi - ylo) + 80;
+
+    tft.setTextDatum(MR_DATUM);
+    // draw y scale
+    for ( i = ylo; i <= yhi; i += yinc) {
+      // compute the transform
+      temp =  (i - ylo) * (- 90) / (yhi - ylo) + 80;
+
+      tft.drawLine(80 + SHIFT_X, temp + shift_y, 520 + SHIFT_X, temp + shift_y, DKBLUE);
+      // draw the axis labels
+      tft.setTextColor(WHITE, BLACK);
+      // precision is default Arduino--this could really use some format control
+      // tft.drawNumber(i, gx-4+SHIFT_X, temp+shift_y, 1);
+      tft.drawFloat(i, dp, 76 + SHIFT_X, temp + shift_y, 1);
+    }
+
+    // draw x scale
+    for (i = 0; i <= 54; i += 3) {
+
+      // compute the transform
+      temp =  i * 440 / 54 + 80;
+      //      if (i == 0) {
+      //        tft.setTextColor(acolor, bcolor);         // label satırı yoooook
+      //        tft.setTextDatum(BC_DATUM);
+      //        tft.drawString(ylabel, (int)temp, (int)(gy - h - 8) , 2);
+      //      }
+      tft.drawLine(temp + SHIFT_X, 80 + shift_y, temp + SHIFT_X, shift_y -10, DKBLUE);
+      tft.drawNumber(i, temp + SHIFT_X, 87 + shift_y, 1);
+      //tft.drawFloat(i, dp, temp+SHIFT_X, gy + 7 + shift_y, 1);
+    }    
+  }
+
+  x =  x * 440 / 90 + 80;
+  y =  (y - ylo) * (-90) / (yhi - ylo) + 80;
+
+  tft.drawLine(ox + SHIFT_X, oy + shift_y, x + SHIFT_X, y + shift_y, color);
+
+  ox = x;
+  oy = y;
+
+}
 
 
