@@ -9,7 +9,14 @@ void Display_Draw_Digits(void)
   tft.setTextDatum(TL_DATUM);
   tft.setTextColor(TFT_CYAN, TFT_BLACK);
   tft.drawString(" Voltage:", 5, 110, 2);
-  tft.drawNumber(Storage_Voltage_Index + 1, 62, 110, 2);
+  if(Random_Mode_Active ==true)
+  {
+    tft.drawString("R", 62, 110, 2);  
+  }
+  else
+  {
+    tft.drawNumber(Storage_Voltage_Index + 1, 62, 110, 2);
+  }
   if (saved == true)
   {
     tft.drawString("(Saved)", 72, 110, 2);

@@ -59,6 +59,7 @@ volatile bool Rotary_Up_Flag = true;
 bool Graph_Update_State;
 bool Graph_Update_StateOld;
 bool saved = false;
+bool Random_Mode_Active = false;
 
 volatile byte Rotary_Fast_Mode = false;
 volatile byte Rotary_VeryFast_Mode = false;
@@ -155,13 +156,22 @@ void loop(void)
     //------------------------
     if (saved == false)
     {
-      Storage_Voltage_Index++;
+      if (Random_Mode_Active)
+      {
+        Random_Mode_Active = false;        
+      }
+      else
+      {
+        Storage_Voltage_Index++;  
+      }      
       if (Storage_Voltage_Index >= STORAGE_VOLTAGE_SIZE)
       {
         Storage_Voltage_Index = 0;
+        Random_Mode_Active = true;
       }
       Rotary_Voltage = Storage_Voltage[Storage_Voltage_Index];
       Change_Voltage(Rotary_Voltage);
+
     }
     else
     {
@@ -191,7 +201,7 @@ void loop(void)
   if (Measure_Refresh)
   {
     Measure_Refresh = false;
-    //--------------------------------------    
+    //--------------------------------------
     dac.setVoltage(Dac_Voltage, false);
     //--------------------------------------
     Current_Limit_Value = analogRead(A0) * 2.93255;// 1023/3;
@@ -270,9 +280,9 @@ void loop(void)
     Average_Current_Total += Measure_Current_mA;
     Average_Current_Count++;
 
-    ///////////////// VOLTAGE //////////////// 
-    Voltage_Min_Value=9999;
-    Voltage_Max_Value=0;
+    ///////////////// VOLTAGE ////////////////
+    Voltage_Min_Value = 9999;
+    Voltage_Max_Value = 0;
     for ( i = 89; i > 0; i--)
     {
       Voltage_Draw_Buffer[i] = Voltage_Draw_Buffer[i - 1];
@@ -285,18 +295,18 @@ void loop(void)
         Voltage_Max_Value = Voltage_Draw_Buffer[i] + 0.5;
       }
     }
-    Voltage_Draw_Buffer[0] = Measure_Load_Voltage;                        
-    if(Voltage_Min_Value<0.5)
+    Voltage_Draw_Buffer[0] = Measure_Load_Voltage;
+    if (Voltage_Min_Value < 0.5)
     {
-      Voltage_Min_Value=0;
+      Voltage_Min_Value = 0;
     }
-    if(Voltage_Min_Value>= 0.5)
+    if (Voltage_Min_Value >= 0.5)
     {
-      Voltage_Min_Value-=0.5;
-    }          
+      Voltage_Min_Value -= 0.5;
+    }
     /////////////////// CURRENT //////////////////
-    Current_Min_Value=9999;
-    Current_Max_Value=0;
+    Current_Min_Value = 9999;
+    Current_Max_Value = 0;
     for ( i = 89; i > 0; i--)
     {
       Current_Draw_Buffer[i] = Current_Draw_Buffer[i - 1];
@@ -306,7 +316,7 @@ void loop(void)
       }
       if (Current_Max_Value <= Current_Draw_Buffer[i])
       {
-        Current_Max_Value = Current_Draw_Buffer[i]+0.5;
+        Current_Max_Value = Current_Draw_Buffer[i] + 0.5;
       }
     }
     Current_Draw_Buffer[0] = Measure_Current_mA;
@@ -316,22 +326,29 @@ void loop(void)
   //--------------------------------------------------------------
   if (Display_Refresh)
   {
-    Display_Refresh = false;    
+    Display_Refresh = false;
     Display_Update++;
     if (Display_Update == 1)
-    {      
-        Display_Draw_Digits();
+    {
+      //--------------------------------------
+      if (Random_Mode_Active)
+      {
+        Rotary_Voltage = random(Storage_Voltage[0], Storage_Voltage[1]);  // 1 ve 2. storage arawsnda random Voltaj üretir display ile bir alakası yok yavaş yenilendiği için buraya ekledim.
+        Change_Voltage(Rotary_Voltage);
+      }
+      //-------------------------------------
+      Display_Draw_Digits();
     }
     else if (Display_Update == 2)
-    {            
-      Measure_Value_Temp = (Voltage_Max_Value - Voltage_Min_Value) / 5;      
+    {
+      Measure_Value_Temp = (Voltage_Max_Value - Voltage_Min_Value) / 5;
       //////////////////////////////////////////////////////////////////////////////
       //############################################################################
       //////////////////////////////////////////////////////////////////////////////
       if (Voltage_Max_Value < 10)
       {
         tft.fillRect(0, 0, 11, 100, TFT_BLACK);
-      }            
+      }
       Graph_Update_State = true;
       Graph_Update_StateOld = false;
       for (i = 0; i < 90; i += 1)
@@ -349,7 +366,7 @@ void loop(void)
     }
     else if (Display_Update == 3)
     {
-      Display_Update=0;
+      Display_Update = 0;
       if (Current_Max_Value > 99)
       {
         DB_Character = 1;
@@ -362,7 +379,7 @@ void loop(void)
       //////////////////////////////////////////////////////////////////////////////
       //############################################################################
       //////////////////////////////////////////////////////////////////////////////
-      if(Current_Max_Value<10)
+      if (Current_Max_Value < 10)
       {
         tft.fillRect(0, 198, 11, 100, TFT_BLACK);
       }
@@ -370,13 +387,13 @@ void loop(void)
       Graph_Update_StateOld = false;
       for (i = 0; i < 90; i += 1)
       {
-        Trace2(i, Current_Draw_BufferOld[i], DB_Character, Current_Min_ValueOld, Current_Max_ValueOld, Measure_Value_TempOld, Graph_Update_StateOld, TFT_BLACK , CURRENT_POZITION,xo,yo);
-        Trace2(i, Current_Draw_Buffer[i], DB_Character,  Current_Min_Value, Current_Max_Value, Measure_Value_Temp, Graph_Update_State, TFT_YELLOW , CURRENT_POZITION,xo2,yo2);
-        Current_Draw_BufferOld[i]=Current_Draw_Buffer[i];
+        Trace2(i, Current_Draw_BufferOld[i], DB_Character, Current_Min_ValueOld, Current_Max_ValueOld, Measure_Value_TempOld, Graph_Update_StateOld, TFT_BLACK , CURRENT_POZITION, xo, yo);
+        Trace2(i, Current_Draw_Buffer[i], DB_Character,  Current_Min_Value, Current_Max_Value, Measure_Value_Temp, Graph_Update_State, TFT_YELLOW , CURRENT_POZITION, xo2, yo2);
+        Current_Draw_BufferOld[i] = Current_Draw_Buffer[i];
       }
-      Measure_Value_TempOld=Measure_Value_Temp;
-      Current_Min_ValueOld=Current_Min_Value;
-      Current_Max_ValueOld=Current_Max_Value;
+      Measure_Value_TempOld = Measure_Value_Temp;
+      Current_Min_ValueOld = Current_Min_Value;
+      Current_Max_ValueOld = Current_Max_Value;
       //////////////////////////////////////////////////////////////////////////////
       //############################################################################
       //////////////////////////////////////////////////////////////////////////////
@@ -387,8 +404,6 @@ void loop(void)
   if (Second_Procces)
   {
     Second_Procces = false;
-    //Dac_Voltage=random(0,492);   // 0-3.6V random// TEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEESTTTTTTTTTTTTTTTTTT 1!!!!
-
     Temperature_Array[Temperature_Index] = (analogRead(A1) * TEMPERATURE_CAL) - 273.15; // 5V referanslı adc ye göre LM335 için sıcaklık hesabı.
     Temperature_Index = (Temperature_Index + 1) % Temperature_FILTER_SN;
     Temperature_Temp = 0;

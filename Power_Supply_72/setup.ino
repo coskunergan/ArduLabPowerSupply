@@ -35,7 +35,8 @@ void setup()
   //---------------------
   //dac.setVoltage(492, true);// default eeprom 3.60V
   //---------------------
-
+  randomSeed(analogRead(1));
+  
   pinMode(Lcd_Power_Pin, OUTPUT);
   digitalWrite(Lcd_Power_Pin, HIGH);
 
