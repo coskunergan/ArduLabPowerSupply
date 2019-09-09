@@ -441,7 +441,7 @@ void loop(void)
   {
     Minute_Procces = false;
 
-    tft.fillScreen(TFT_BLACK);
+    //tft.fillScreen(TFT_BLACK);
 
   }
   //--------------------------------------------------------------------------
