@@ -1,0 +1,15 @@
+benim kartımda olan yazılımın ekranı için aşağıdaki config ayarlı olacak 
+
+
+//#define HX8357B
+//#define HX8357C
+//#define ILI9481
+#define ILI9486
+
+Ayrıca INA 219 ölçüm örneklemelerini 69ms ye çekiyoruz;
+
+                    INA219_CONFIG_GAIN_1_40MV |
+                    INA219_CONFIG_BADCRES_12BIT |
+                    //INA219_CONFIG_SADCRES_12BIT_1S_532US |					
+					INA219_CONFIG_SADCRES_12BIT_128S_69MS |
+                    INA219_CONFIG_MODE_SANDBVOLT_CONTINUOUS;
